@@ -169,7 +169,7 @@ def get_data(args):
     
     ###Change here
     def convert(srcfile, targetfile, alignfile, batchsize, seqlength, outfile, total_num_sents,
-                num_sents, max_word_l = 35, max_sent_l=0,chars=1):
+                num_sents, max_word_l = 35, max_sent_l=0, chars=0):
 
         def init_features_tensor(indexers):
             return [ np.zeros((num_sents, newseqlength), dtype=int)
@@ -286,7 +286,6 @@ def get_data(args):
             
             if sent_id % 100000 == 0:
                 print("{}/{} sentences processed, shard {}".format(total_sent_id, total_num_sents, shards))
-
         
             if sent_id % num_sents == 0 or total_sent_id == total_num_sents:
                 if total_sent_id == total_num_sents:
