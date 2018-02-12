@@ -206,6 +206,7 @@ def get_data(args):
             targets_char = np.zeros((num_sents, newseqlength, max_word_l), dtype=int)
         dropped = 0
         sent_id = 0
+        shards = 1
         for _, (src_orig, targ_orig) in \
                 enumerate(itertools.izip(open(srcfile,'r'), open(targetfile,'r'))):
             src_orig, src_orig_features = load_sentence(src_orig, src_feature_indexers)
@@ -288,9 +289,10 @@ def get_data(args):
 
             sent_id += 1
             if sent_id % 100000 == 0:
-                print("{}/{} sentences processed".format(sent_id, num_sents))
+                print("{}/{} sentences processed, shard {}".format(sent_id, num_sents, shards))
 
         print(sent_id, num_sents)
+        print("saving shard {}".format(shards))
         if shuffle == 1:
             rand_idx = np.random.permutation(sent_id)
             targets = targets[rand_idx]
@@ -348,7 +350,7 @@ def get_data(args):
             target_l_max.append(max(target_l[batch_idx[i]-1:batch_idx[i+1]-1]))
 
         # Write output
-        f = h5py.File(outfile, "w")
+        f = h5py.File(outfile + '.' + str(shards) + '.hdf5', "w")
 
         f["source"] = sources
         f["target"] = targets
@@ -379,6 +381,7 @@ def get_data(args):
 
             assert(len(alignment_cc_colidx)<4294967296)
             f["alignment_cc_sentidx"] = np.array(alignment_cc_sentidx, dtype=np.uint32)
+            print(alignment_cc_sentidx)
             f["alignment_cc_colidx"] = np.array(alignment_cc_colidx, dtype=np.uint32)
             f["alignment_cc_val"] = np.array(alignment_cc_val, dtype=np.uint8)
 
@@ -402,9 +405,9 @@ def get_data(args):
             targets_char = targets_char[source_sort]
             f["target_char"] = targets_char
             f["char_size"] = np.array([len(char_indexer.d)])
-        print("Saved {} sentences (dropped {} due to length/unk filter)".format(
-            len(f["source"]), dropped))
+        print("Saved {} sentences (dropped {} due to length/unk filter)".format(len(f["source"]), dropped))
         f.close()
+        shards += 1
         return max_sent_l
 
     print("First pass through data to get vocab...")
@@ -452,10 +455,10 @@ def get_data(args):
 
     max_sent_l = 0
     max_sent_l = convert(args.srcvalfile, args.targetvalfile, args.alignvalfile, args.batchsize, args.seqlength,
-                         args.outputfile + "-val.hdf5", num_sents_valid,
+                         args.outputfile + "-val.hdf5", num_sents_valid, args.shardsize,
                          max_word_l, max_sent_l, args.chars, args.unkfilter, args.shuffle)
     max_sent_l = convert(args.srcfile, args.targetfile, args.alignfile, args.batchsize, args.seqlength,
-                         args.outputfile + "-train.hdf5", num_sents_train, max_word_l,
+                         args.outputfile + "-train.hdf5", num_sents_train, args.shardsize, max_word_l,
                          max_sent_l, args.chars, args.unkfilter, args.shuffle)
 
     print("Max sent length (before dropping): {}".format(max_sent_l))
@@ -481,6 +484,7 @@ def main(arguments):
     parser.add_argument('--srcvalfile', help="Path to source validation data.", required=True)
     parser.add_argument('--targetvalfile', help="Path to target validation data.", required=True)
     parser.add_argument('--batchsize', help="Size of each minibatch.", type=int, default=64)
+    parser.add_argument('--shardsize', help="Num sents in each shard", type=int, default=50000) 
     parser.add_argument('--seqlength', help="Maximum sequence length. Sequences longer "
                                                "than this are dropped.", type=int, default=50)
     parser.add_argument('--outputfile', help="Prefix of the output file names. ", type=str, required=True)
