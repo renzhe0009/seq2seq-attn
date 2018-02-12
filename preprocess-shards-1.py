@@ -276,11 +276,9 @@ def get_data(args):
                 sources_features[i][sent_id] = np.array(source_features[i], dtype=int)
             if alignfile_hdl:
                 for pair in align:
-         #           if '-' in pair
                         try:
                             aFrom, aTo = pair.split('-')
                             alignments[sent_id][int(aFrom) + 1][int(aTo) + 1] = 1
-                          #  break
                         except:
                             pass
             sent_id += 1
@@ -339,7 +337,7 @@ def get_data(args):
     
                 # Write output
                 #f = h5py.File(outfile, "w")
-		f = h5py.File(outfile + '.' + str(shards) + '.hdf5', "w")
+                f = h5py.File(outfile + '.' + str(shards) + '.hdf5', "w")
 
     
                 f["source"] = sources
@@ -354,25 +352,27 @@ def get_data(args):
                     for k in range(sent_id-1):
                         alignment_cc_sentidx.append(len(alignment_cc_colidx))
                         for i in xrange(0, source_l[k]):
-                    # for word i, build aligment vector as a string for indexing
+                            # for word i, build aligment vector as a string for indexing
                             a=''
                             maxnalign=0
-                    # build a string representing the alignment vector
+                            # build a string representing the alignment vector
                             for j in xrange(0, newseqlength):
                                 a=a+chr(ord('0')+int(alignments[k][i][j]))
-                    # check if we have already built such column
+                            # check if we have already built such column
                             if not a in S:
-                                 alignment_cc_colidx.append(len(alignment_cc_val))
-                                 S[a]=len(alignment_cc_val)
-                                 for j in xrange(0, newseqlength):
-                                     alignment_cc_val.append(alignments[k][i][j])
+                                alignment_cc_colidx.append(len(alignment_cc_val))
+                                S[a]=len(alignment_cc_val)
+                                for j in xrange(0, newseqlength):
+                                    alignment_cc_val.append(alignments[k][i][j])
                             else:
                                 alignment_cc_colidx.append(S[a])
 
-                        assert(len(alignment_cc_colidx)<4294967296)
-                        f["alignment_cc_sentidx"] = np.array(alignment_cc_sentidx, dtype=np.uint32)
-                        f["alignment_cc_colidx"] = np.array(alignment_cc_colidx, dtype=np.uint32)
-                        f["alignment_cc_val"] = np.array(alignment_cc_val, dtype=np.uint8)
+                    assert(len(alignment_cc_colidx)<4294967296)
+                    f["alignment_cc_sentidx"] = np.array(alignment_cc_sentidx, dtype=np.uint32)
+                    print(alignment_cc_sentidx)
+                    f["alignment_cc_colidx"] = np.array(alignment_cc_colidx, dtype=np.uint32)
+                    print(alignment_cc_colidx)
+                    f["alignment_cc_val"] = np.array(alignment_cc_val, dtype=np.uint8)
 
 
                 f["target_l"] = np.array(target_l_max, dtype=int)
@@ -395,8 +395,7 @@ def get_data(args):
                     targets_char = targets_char[source_sort]
                     f["target_char"] = targets_char
                     f["char_size"] = np.array([len(char_indexer.d)])
-                print("Saved {} sentences (dropped {} due to length/unk filter)".format(
-                    len(f["source"]), dropped))
+                print("Saved {} sentences (dropped {} due to length/unk filter)".format(len(f["source"]), dropped))
                 
                 f.close()
                 
