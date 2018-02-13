@@ -281,6 +281,7 @@ def get_data(args):
                             alignments[sent_id][int(aFrom) + 1][int(aTo) + 1] = 1
                         except:
                             pass
+                        # maybe alignfile will be sth wrong
             sent_id += 1
             total_sent_id += 1
             
@@ -292,7 +293,7 @@ def get_data(args):
                     source_lengths = source_lengths[:sent_id]
                 print(sent_id, num_sents)        
                 print("saving shard {}".format(shards))
-                sent_id = 0                
+                #sent_id = 0     still need           
                 
                 source_sort = np.argsort(source_lengths) 
                 sources = sources[source_sort]
@@ -397,7 +398,7 @@ def get_data(args):
                 print("Saved {} sentences (dropped {} due to length/unk filter)".format(len(f["source"]), dropped))
                 
                 f.close()
-                
+                sent_id = 0    
                 shards +=1
         return max_sent_l
 
