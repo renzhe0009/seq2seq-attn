@@ -168,8 +168,9 @@ def get_data(args):
         return max_word_l, num_sents
     
     ###Change here
+
     def convert(srcfile, targetfile, alignfile, batchsize, seqlength, outfile, total_num_sents,
-                num_sents, max_word_l = 35, max_sent_l=0, chars=0):
+                num_sents, max_word_l = 35, max_sent_l=0,chars=0):
 
         def init_features_tensor(indexers):
             return [ np.zeros((num_sents, newseqlength), dtype=int)
@@ -276,24 +277,24 @@ def get_data(args):
                 sources_features[i][sent_id] = np.array(source_features[i], dtype=int)
             if alignfile_hdl:
                 for pair in align:
-                        try:
-                            aFrom, aTo = pair.split('-')
-                            alignments[sent_id][int(aFrom) + 1][int(aTo) + 1] = 1
-                        except:
-                            pass
-                        # maybe alignfile will be sth wrong
+                    try:
+                        aFrom, aTo = pair.split('-')
+                        alignments[sent_id][int(aFrom) + 1][int(aTo) + 1] = 1
+                    except:
+                        pass
             sent_id += 1
             total_sent_id += 1
             
-            if sent_id % 100000 == 0:
+            if sent_id % 10000 == 0:
                 print("{}/{} sentences processed, shard {}".format(total_sent_id, total_num_sents, shards))
+
         
             if sent_id % num_sents == 0 or total_sent_id == total_num_sents:
                 if total_sent_id == total_num_sents:
                     source_lengths = source_lengths[:sent_id]
                 print(sent_id, num_sents)        
                 print("saving shard {}".format(shards))
-                #sent_id = 0     still need           
+                # sent_id = 0
                 
                 source_sort = np.argsort(source_lengths) 
                 sources = sources[source_sort]
@@ -369,12 +370,13 @@ def get_data(args):
 
                     assert(len(alignment_cc_colidx)<4294967296)
                     f["alignment_cc_sentidx"] = np.array(alignment_cc_sentidx, dtype=np.uint32)
-                    print(alignment_cc_sentidx)
+                    #print(alignment_cc_sentidx)
                     f["alignment_cc_colidx"] = np.array(alignment_cc_colidx, dtype=np.uint32)
-                    print(alignment_cc_colidx)
+                    #print(alignment_cc_colidx)
                     f["alignment_cc_val"] = np.array(alignment_cc_val, dtype=np.uint8)
 
-
+                sent_id = 0
+                alignments = np.zeros((num_sents, newseqlength, newseqlength), dtype=np.uint8)
                 f["target_l"] = np.array(target_l_max, dtype=int)
                 f["target_l_all"] = target_l
                 f["batch_l"] = np.array(batch_l, dtype=int)
@@ -396,9 +398,9 @@ def get_data(args):
                     f["target_char"] = targets_char
                     f["char_size"] = np.array([len(char_indexer.d)])
                 print("Saved {} sentences (dropped {} due to length/unk filter)".format(len(f["source"]), dropped))
-                
+                f.flush()
                 f.close()
-                sent_id = 0    
+                
                 shards +=1
         return max_sent_l
 
@@ -459,20 +461,20 @@ def main(arguments):
                                                 type=int, default=50000)
     parser.add_argument('--srcfile', help="Path to source training data, "
                                            "where each line represents a single "
-                                           "source/target sequence.", required=True)
+                                           "source/target sequence.", required=False, default='data-basechar/train-jp-char.txt')
     parser.add_argument('--targetfile', help="Path to target training data, "
                                            "where each line represents a single "
-                                           "source/target sequence.", required=True)
-    parser.add_argument('--srcvalfile', help="Path to source validation data.", required=True)
-    parser.add_argument('--targetvalfile', help="Path to target validation data.", required=True)
-    parser.add_argument('--shardsize', help="Num sents in each shard", type=int, default=50000)
-    parser.add_argument('--batchsize', help="Size of each minibatch.", type=int, default=64)
+                                           "source/target sequence.", required=False, default='data-basechar/train-ch-char.txt')
+    parser.add_argument('--srcvalfile', help="Path to source validation data.", required=False, default='data-basechar/src-val.txt')
+    parser.add_argument('--targetvalfile', help="Path to target validation data.", required=False, default='data-basechar/targ-val.txt')
+    parser.add_argument('--shardsize', help="Num sents in each shard", type=int, default=100000)
+    parser.add_argument('--batchsize', help="Size of each minibatch.", type=int, default=10)
     parser.add_argument('--seqlength', help="Maximum sequence length. Sequences longer "
-                                               "than this are dropped.", type=int, default=50)
-    parser.add_argument('--outputfile', help="Prefix of the output file names. ", type=str, required=True)
+                                               "than this are dropped.", type=int, default=200)
+    parser.add_argument('--outputfile', help="Prefix of the output file names. ", type=str, required=False, default='data-basechar/basechar-align-1.2')
     parser.add_argument('--maxwordlength', help="For the character models, words are "
                                            "(if longer than maxwordlength) or zero-padded "
-                                            "(if shorter) to maxwordlength", type=int, default=35)
+                                            "(if shorter) to maxwordlength", type=int, default=1)
     parser.add_argument('--chars', help="If 1, construct the character-level dataset as well. "
                                         "This might take up a lot of space depending on your data "
                                         "size, so you may want to break up the training data into "
@@ -480,8 +482,8 @@ def main(arguments):
     
     parser.add_argument('--reusefeaturefile', help="Use existing feature vocabs",
                                           type = str, default ='')
-    parser.add_argument('--alignfile', type = str, required=False, default='')
-    parser.add_argument('--alignvalfile', type = str, required=False, default='')
+    parser.add_argument('--alignfile', type = str, required=False, default='data-basechar/train.align')
+    parser.add_argument('--alignvalfile', type = str, required=False, default='data-basechar/dev.align')
     
     args = parser.parse_args(arguments)
     get_data(args)
